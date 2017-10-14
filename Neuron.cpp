@@ -1,7 +1,7 @@
 #include "Neuron.hpp"
 #include <cmath>
 
-Neuron::Neuron() : state(false)
+Neuron::Neuron() : state(false), buffer({0})
 {
 	time_spikes.clear();
 	nb_spikes=0;
@@ -25,9 +25,16 @@ std::list<double>  Neuron::getTime()
 	return time_spikes;
 }
 
+//tells if the neron is spiking or not
 bool Neuron::isSpiking() const
 {
 	return state;
+}
+
+//set the neuron's buffer
+std::array<double,29> Neuron::setBuffer (int i, double potential)
+{
+	buffer[i] +=potential;
 }
 
 void Neuron::updateNeuronState(double dt, double I, Neuron n)
@@ -39,14 +46,15 @@ void Neuron::updateNeuronState(double dt, double I, Neuron n)
 		return;
 	}
 	
-	//calcul du potentiel de membrane
+	//calcul of the mebrane potential
 	mb_potential=exp(-dt/TAU)*mb_potential+ I*R*(1-exp(-dt/TAU));
 	
-	//si le neurone recoit un message, on ajoute la constante J
-	if(isReceivingSignal(n))
-	{
-		mb_potential+=J;
+	//si le buffer du neurone post synaptique au pas de temps clock_ contient une valeur, on rajoute cette valeur au potentiel de membrane
+	if (buffer[clock_%(int)buffer.size()]!=0){
+		mb_potential +=buffer[clock_%(int)buffer.size()];
+		buffer[clock_%(int)buffer.size()]=0;
 	}
+	
 	//if the membrane potential recheases the threshold, the potential goes back to zero
 	if(mb_potential>=V_TH){
 		mb_potential=POT_RESET;
@@ -63,11 +71,13 @@ void Neuron::updateNeuronState(double dt, double I, Neuron n)
 	state=0; //the neuron isn't spiking
 }
 
-bool Neuron::isReceivingSignal(Neuron neuron)
+//when the pre synaptic neuron is spiking, we had the constant J in the post synaptic neuron buffer with the delay 
+void Neuron::sendingMessage(Neuron n)
 {
-	if(neuron.isSpiking()==true){
-		return true;
-	}else{
-		return false;
+	if (isSpiking()==true)
+	{
+		n.setBuffer(((clock_+DELAY)%(int)buffer.size()), J);
 	}
 }
+
+

@@ -12,3 +12,4 @@ int const T_STOP(100);
 int const T_START(0);
 double const POT_RESET(0.0);  
 double const J(10.0);  //constante qu'on ajoute au potentiel de membrane si un neurone recoit un signal d'un autre neurone
+int const DELAY(15); //delay after wich the post synaptic neuron responds 

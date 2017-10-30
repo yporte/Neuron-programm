@@ -4,12 +4,19 @@
 
 double const TAU(20.0);      //membrane time constant
 double const R(20.0);        //membrane resistance                
-double const V_TH(20.0);     //valeur seuil du potentiel de menbrane  
+double const V_TH(20.0);     //valeur seuil du potentiel de membrane 
+double const V_REST(0.0);
 double const DT(1);          //pas de temps           
-int const REFRACT_TIME(2);   //temps pendant lequel le neurone reste inactif apres un spike            
-double const REFRACT_STEP(REFRACT_TIME/DT); 
+int const REFRACT_TIME(2);   //temps pendant lequel le neurone reste inactif apres un spike       
 int const T_STOP(100);
-int const T_START(0);
-double const POT_RESET(0.0);  
-double const J(10.0);  //constante qu'on ajoute au potentiel de membrane si un neurone recoit un signal d'un autre neurone
-int const DELAY(15); //delay after wich the post synaptic neuron responds 
+int const T_START(0); 
+double const JE(0.1);  //constant we add to the membrane potential if a neuron receives a signal from an excitatory neuron 
+double const JI(0.5);		   //constant we add to the membrane potential if a neuron receives a signal from an inhibitory neuron 
+double const DELAY(1.5); //delay after wich the post synaptic neuron responds 
+double const STEP(0.1); 
+int const NB_EXCITATOR(10000);
+int const NB_INHIBITOR(2500);
+int const NB_TOT(12500);
+constexpr int CE=(int) (0.1*NB_EXCITATOR);
+constexpr int CI=(int) (0.1*NB_INHIBITOR);
+constexpr double V_EXT=V_TH/(CE*JE*TAU);

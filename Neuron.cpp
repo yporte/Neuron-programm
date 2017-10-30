@@ -1,11 +1,20 @@
 #include "Neuron.hpp"
 #include <cmath>
 
-Neuron::Neuron() : state(false), buffer({0})
+//constructor
+Neuron::Neuron(bool type) : state(false), buffer({0}), type(type), refractory_time(0)
 {
 	time_spikes.clear();
 	nb_spikes=0;
+	connexions = { };
+	
 }
+
+
+//Destructor
+Neuron::~Neuron()
+{}
+
 
 //give the neuron's membrane potential
 double Neuron::getPotential() const
@@ -20,9 +29,15 @@ int Neuron::getNbSpikes() const
 }
 
 //give the time
-std::list<double>  Neuron::getTime()
+std::list<double>  Neuron::getTime() const
 {
 	return time_spikes;
+}
+
+
+// get the list of all connections
+std::vector<int> Neuron::getConnexions() const {
+	return connexions;
 }
 
 //tells if the neron is spiking or not
@@ -37,47 +52,95 @@ std::array<double,29> Neuron::setBuffer (int i, double potential)
 	buffer[i] +=potential;
 }
 
-void Neuron::updateNeuronState(double dt, double I, Neuron n)
+bool Neuron::isExcitatory()
 {
-	//after a spike, the neuron stays inactive during a given refractory time and it's potential is 0
-	if (refractory_time >= 0){
-		mb_potential= 0.0;
-		refractory_time-=dt;
-		return;
-	}
+	return type;
+}
+
+bool Neuron::isRefractory()
+{
+	return(refractory_time>0);	
+}
 	
-	//calcul of the mebrane potential
-	mb_potential=exp(-dt/TAU)*mb_potential+ I*R*(1-exp(-dt/TAU));
+double Neuron::backgroundNoise()
+{
+	//generates a background noise following a poisson distribution
+	std::random_device rd;  
+    std::mt19937 gen(rd());
+    std::poisson_distribution<> poissonGen(V_EXT*CE*JE*0.1);
+    poissonGen(rd);
+}
+
+bool Neuron::updateNeuronState(int steps, double I)
+{
+	
+	for (int i = 0; i < steps; ++i) {
+		// if the membrane potential exceeds the threshold, we emit a spike
+		if (mb_potential >=V_TH) {
+			state = true;
+			++nb_spikes;
+			time_spikes.push_back(clock_);
+			refractory_time=REFRACT_TIME;
+		}
+		
+		if (isRefractory()) {
+			//the membrane potential resets to zero if there was a spike
+			mb_potential = V_REST;
+			--refractory_time;
+		}else{
+			// update the membrane potential
+			updateNeuronPotential(I);
+		}
+				
+		++clock_;
+		state=0; //the neuron isn't spiking
+	}
+	return state;
+}
+
+void Neuron::updateNeuronPotential(double I) 
+{
+	
+	//calcul of the membrane potential
+	mb_potential=exp(-0.1/TAU)*mb_potential+ I*R*(1-exp(-0.1/TAU));
 	
 	//si le buffer du neurone post synaptique au pas de temps clock_ contient une valeur, on rajoute cette valeur au potentiel de membrane
 	if (buffer[clock_%(int)buffer.size()]!=0){
 		mb_potential +=buffer[clock_%(int)buffer.size()];
 		buffer[clock_%(int)buffer.size()]=0;
 	}
-	
-	//if the membrane potential recheases the threshold, the potential goes back to zero
-	if(mb_potential>=V_TH){
-		mb_potential=POT_RESET;
-		time_spikes.push_back(clock_);
-		++nb_spikes;
-		state=1; //the neuron is spiking
-		
-		//we initiate the time to the refractory time after each spike
-		refractory_time=REFRACT_TIME;
-		return;
-	}
-	
-	clock_+=dt;
-	state=0; //the neuron isn't spiking
+
+	// we add a background noise
+	mb_potential += backgroundNoise();
 }
 
+
 //when the pre synaptic neuron is spiking, we had the constant J in the post synaptic neuron buffer with the delay 
-void Neuron::sendingMessage(Neuron n)
+void Neuron::sendingMessage(Neuron* n)
 {
 	if (isSpiking()==true)
 	{
-		n.setBuffer(((clock_+DELAY)%(int)buffer.size()), J);
+		if(isExcitatory()==true){
+			n->setBuffer(((int)(clock_+(DELAY/STEP))%(int)buffer.size()), JE);
+		}else{
+			n->setBuffer(((int)(clock_+(DELAY/STEP))%(int)buffer.size()), JI);
+		}
 	}
 }
 
 
+void Neuron::simulation(int simulation_time, int i_ext)
+{
+	int t(T_START);
+	do{
+		updateNeuronState(t,i_ext);
+		++t;
+	}while(t<simulation_time);
+}
+
+
+// add a connexion target
+void Neuron::addConnexions(int idx) {
+	connexions.push_back(idx);
+}
+	

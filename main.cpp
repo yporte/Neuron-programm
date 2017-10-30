@@ -6,8 +6,7 @@
 
 int main()
 {
-	Neuron neuron1;
-	Neuron neuron2;
+	Network neuron;
 	double time(T_START);
 	
 	//l'utilisateur entre une valeur pour l'intensité et on verifie qu'elle est positive
@@ -32,33 +31,37 @@ int main()
 	
 	
 	//on ouvre un fichier externe
-	
+	/**
 	std::ofstream file;
 	std::string nom_de_fichier("mbPotential.dat");
 	file.open(nom_de_fichier.c_str());
-	
+*/
 	
 	while(time<T_STOP)
 	{
 		//Si on est pas dans l'intervalle [a,b), on met à jour le potentiel de membrane avec une intensité qui vaut zéro
 		if(time<a or time>=b){
-			neuron1.updateNeuronState(DT, 0.0, neuron2);
+			neuron.update(DT, 0.0);
 		} 
 		//Si on est dans l'intervalle [a,b), on met à jour le potentiel de membrane avec une intensité qui vaut Iext
 		else if(time>=a and time<b){
-			neuron1.updateNeuronState(DT, intensity, neuron2);
+			neuron.update(DT, intensity);
 		}
 		
+		/*
 		//On stocke la valeur du potentiel dans un fichier externe	
-		file<< "V("<<time<<") = " <<neuron1.getPotential()<<std::endl;
+		file<< "V("<<time<<") = " <<neuron.getPotential()<<std::endl;
 		
+		*/
 		//On incrémente le temps
 		time+=DT;
 	}
 	
+	/**
 	//on ferme le fichier
 	file.close();
-	
+*/
+	return 0;
 }
 
 
